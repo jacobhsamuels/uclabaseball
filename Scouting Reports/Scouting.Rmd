@@ -1,0 +1,45 @@
+---
+title: "Scouting"
+author: "Jacob Samuels"
+date: "2/18/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+\pagebreak
+
+```{r, echo=FALSE, include=FALSE}
+source("scouting.R")
+```
+
+```{r, echo=FALSE, include=FALSE}
+library(readr)
+Trackman <- read_csv("~/UCLA Baseball/CSVs/Scouting/UC Irvine/UCI.csv", skip = 3)
+scouts <- Trackman %>% filter(PitcherTeam == "CAL_ANT")
+```
+
+```{r, echo=FALSE, include=FALSE}
+table(scouts$Pitcher)
+table(scouts$TaggedPitchType)
+table(scouts$PitchCall)
+```
+
+```{r, echo=FALSE, results='asis'}
+players <- names(table(scouts$Pitcher))
+for (i in seq_along(players)) {
+  BIP_data(scouts, players[i])
+  Pitch_Type(scouts, players[i])
+  Batter_Splits(scouts, players[i])
+}
+```
+
+```{r, echo=FALSE, results='asis'}
+for (i in seq_along(players)) {
+  Reliever_Report(scouts, players[i])
+}
+```
+
+
