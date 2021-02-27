@@ -1,0 +1,30 @@
+---
+title: "Eval Sheet by Jacob Samuels"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE, include=FALSE}
+source("Eval Sheet.R")
+```
+
+```{r, echo=FALSE, include=FALSE}
+library(readr)
+Trackman <- read_csv("~/UCLA Baseball/CSVs/2021 Season/2-26.csv")
+Game <- Trackman %>% filter(PitcherTeam == "UCLA")
+table(Game$Pitcher)
+table(Game$TaggedPitchType)
+table(Game$PitchCall)
+```
+
+```{r, echo=FALSE, results='asis'}
+players <- names(table(Game$Pitcher))
+
+for (i in seq_along(players)) {
+  Pitcher_Eval(Game, players[i])
+}
+```
+

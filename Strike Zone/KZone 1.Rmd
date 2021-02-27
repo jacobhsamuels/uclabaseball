@@ -1,0 +1,675 @@
+---
+title: "TrackMan UCI Data"
+author: "Jacob Samuels"
+date: "11/9/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE, include=FALSE}
+library(readr)
+library(dplyr)
+Umpire1 <- read_csv("~/UCLA Baseball/CSVs/2021 Winter/Jan-Feb2021.csv", skip = 3)
+Umpire <- Umpire1 %>% filter(PitchCall != "BallIntentional") %>% filter(!is.na(PlateLocSide))
+```
+
+```{r, echo=FALSE, include=FALSE}
+TM1 <- Umpire[,c(22,41,42)]
+table(is.na(TM1))
+names(TM1) <- c("PitchCall", "PlateLocHeight", "PlateLocSide")
+#View(TM1)
+```
+
+```{r, echo=FALSE, include=FALSE}
+Ump1L <- Umpire[which(Umpire$BatterSide == "Left"),]
+Ump1R <- Umpire[which(Umpire$BatterSide == "Right"),]
+TM1L <- Ump1L[,c(22,41,42)]
+TM1R <- Ump1R[,c(22,41,42)]
+```
+
+#Umpire vs. LHH
+
+```{r, echo=FALSE, include=FALSE}
+table(is.na(TM1L))
+names(TM1L) <- c("PitchCall", "PlateLocHeight", "PlateLocSide")
+#View(TM1L)
+```
+
+```{r, echo=FALSE, include=FALSE}
+TM1L$High <- rep(0, nrow(TM1L))
+TM1L$Low <- rep(0, nrow(TM1L))
+TM1L$Lefty <- rep(0, nrow(TM1L))
+TM1L$Righty <- rep(0, nrow(TM1L))
+TM1L$StrikeZone <- rep(0, nrow(TM1L))
+TM1L$CloseK <- rep(0, nrow(TM1L))
+TM1L$CloseB <- rep(0, nrow(TM1L))
+TM1L$CloseH <- rep(0, nrow(TM1L))
+for (i in 1:nrow(TM1L)) {
+  TM1L$High[i] <- ifelse(TM1L$PlateLocHeight[i] > 3.5, 1, 0)
+  TM1L$Low[i] <- ifelse(TM1L$PlateLocHeight[i] < 1.5, 1, 0)
+  TM1L$Lefty[i] <- ifelse(TM1L$PlateLocSide[i] < -0.8333333, 1, 0)
+  TM1L$Righty[i] <- ifelse(TM1L$PlateLocSide[i] > 0.8333333, 1, 0)
+  TM1L$StrikeZone[i] <- ifelse(TM1L$High[i] == 0 && TM1L$Low[i] == 0 && TM1L$Lefty[i] == 0 && TM1L$Righty[i] == 0, 1, 0)
+  if(0.5 < TM1L$PlateLocSide[i] && TM1L$PlateLocSide[i] < 0.8333333) TM1L$CloseK[i] <- 1
+  if(-0.5 > TM1L$PlateLocSide[i] && TM1L$PlateLocSide[i] > -0.8333333) TM1L$CloseK[i] <- 1
+  if(0.8333333 < TM1L$PlateLocSide[i] && TM1L$PlateLocSide[i] < 1.1) TM1L$CloseB[i] <- 1
+  if(-0.8333333 > TM1L$PlateLocSide[i] && TM1L$PlateLocSide[i] > -1.1) TM1L$CloseB[i] <- 1
+  if(1 < TM1L$PlateLocHeight[i] && TM1L$PlateLocHeight[i] < 4) TM1L$CloseH[i] <- 1
+}
+```
+
+```{r, echo=FALSE, include=FALSE}
+TM1L$KcalledB <- rep(0, nrow(TM1L))
+TM1L$BcalledK <- rep(0, nrow(TM1L))
+TM1L$KcalledK <- rep(0, nrow(TM1L))
+TM1L$BcalledB <- rep(0, nrow(TM1L))
+TM1L$Incorrect <- rep(0, nrow(TM1L))
+TM1L$Correct <- rep(0, nrow(TM1L))
+for (i in 1:nrow(TM1L)) {
+  TM1L$KcalledB[i] <- ifelse(TM1L$StrikeZone[i] == 1 && TM1L$PitchCall[i] == "BallCalled", 1, 0)
+  TM1L$BcalledK[i] <- ifelse(TM1L$StrikeZone[i] == 0 && TM1L$PitchCall[i] == "StrikeCalled", 1, 0)
+  TM1L$KcalledK[i] <- ifelse(TM1L$StrikeZone[i] == 1 && TM1L$PitchCall[i] == "StrikeCalled", 1, 0)
+  TM1L$BcalledB[i] <- ifelse(TM1L$StrikeZone[i] == 0 && TM1L$PitchCall[i] == "BallCalled", 1, 0)
+  if(TM1L$KcalledB[i] == 1) TM1L$Incorrect[i] <- 1
+  if(TM1L$BcalledK[i] == 1) TM1L$Incorrect[i] <- 1
+  if(TM1L$KcalledK[i] == 1) TM1L$Correct[i] <- 1
+  if(TM1L$BcalledB[i] == 1) TM1L$Correct[i] <- 1
+}
+```
+
+```{r, echo=FALSE, include=FALSE}
+KBsum <- sum(TM1L$KcalledB)
+BKsum <- sum(TM1L$BcalledK)
+KKsum <- sum(TM1L$KcalledK)
+BBsum <- sum(TM1L$BcalledB)
+accurate <- KKsum + BBsum
+inaccurate <- KBsum + BKsum
+strikes <- KBsum + KKsum
+balls <- BKsum + BBsum
+accurate
+inaccurate
+total <- accurate + inaccurate
+umpire <- matrix(c(KBsum, BKsum, inaccurate, (KKsum), BBsum, accurate, strikes, balls, total, round(KKsum/strikes, 3), round(BBsum/balls, 3), round(accurate/total, 3)), ncol = 3, byrow = TRUE)
+colnames(umpire) <- c("Zone", "No Zone", "Total")
+rownames(umpire) <- c("Incorrect", "Correct", "Total", "Accuracy")
+```
+
+Table showing umpire's accuracy:
+
+```{r, echo=FALSE}
+umpire
+```
+
+```{r, echo=FALSE, include=FALSE}
+thislist <- 0
+thislist2 <- 0
+thislist3 <- 0
+thislist4 <- 0
+thislist5 <- 0
+thislist6 <- 0
+for (i in 1:nrow(TM1L)) {
+  if(TM1L$Incorrect[i] == 1) thislist <- c(thislist, i)
+  if(TM1L$KcalledB[i] == 1) thislist2 <- c(thislist2, i)
+  if(TM1L$BcalledK[i] == 1) thislist3 <- c(thislist3, i)
+  if(TM1L$Correct[i] == 1) thislist4 <- c(thislist4, i)
+  if(TM1L$CloseK[i] == 1 && TM1L$KcalledK[i] == 1 && TM1L$CloseH[i] == 1) thislist5 <- c(thislist5, i)
+  if(TM1L$CloseB[i] == 1 && TM1L$Correct[i] == 1 && TM1L$CloseH[i] == 1) thislist6 <- c(thislist6, i)
+}
+TMWrong <- TM1L[thislist[-1],]
+TMKcalledB <- TM1L[thislist2[-1],]
+TMBcalledK <- TM1L[thislist3[-1],]
+TMCorrect <- TM1L[thislist4[-1],]
+TMCloseK <- TM1L[thislist5[-1],]
+TMCloseB <- TM1L[thislist6[-1],]
+nrow(TMWrong)
+nrow(TMKcalledB)
+nrow(TMBcalledK)
+nrow(TMCorrect)
+nrow(TMCloseK)
+nrow(TMCloseB)
+```
+
+```{r, echo=FALSE}
+library(ggplot2)
+ggplot(data = TMKcalledB, aes(PlateLocSide*-1, PlateLocHeight)) + geom_point(color = "orange") + geom_point(data = TMBcalledK, aes(PlateLocSide*-1, PlateLocHeight), color = "red") + geom_point(data = TMCloseK, aes(PlateLocSide*-1, PlateLocHeight), color = "blue") + geom_point(data = TMCloseB, aes(PlateLocSide*-1, PlateLocHeight), color = "green") + geom_vline(xintercept = -0.8333333) + geom_vline(xintercept = 0.8333333) + geom_hline(yintercept = 3.5) + geom_hline(yintercept = 1.5) + ggtitle("Behind Home View of Umpire's Close Calls") + xlab("") + ylab("") + theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r, echo=FALSE, include=FALSE}
+#View(TMWrong)
+thislist2 <- 0
+for (i in 1:nrow(TMWrong)) {
+  if(TMWrong$StrikeZone[i] == 0) thislist2 <- c(thislist2, i)
+}
+TMBalls <- TMWrong[thislist2[-1],]
+#View(TMBalls)
+missareaprop <- prop.table(c(sum(TMBalls$High), sum(TMBalls$Low), sum(TMBalls$Lefty), sum(TMBalls$Righty)))
+missarea <- matrix(c(sum(TMBalls$High), sum(TMBalls$Low), sum(TMBalls$Lefty), sum(TMBalls$Righty), sum(c(TMBalls$High, TMBalls$Low, TMBalls$Lefty, TMBalls$Righty)), round(missareaprop[1], 3), round(missareaprop[2], 3), round(missareaprop[3], 3), round(missareaprop[4], 3), 1), nrow = 2, byrow = TRUE)
+colnames(missarea) <- c("Up", "Down", "Lefty In", "Lefty Out", "Total")
+rownames(missarea) <- c("Misses", "Proportion")
+```
+
+Location of missed calls:
+
+```{r, echo=FALSE}
+missarea
+```
+
+\pagebreak
+
+# Umpire vs. RHH
+
+```{r, echo=FALSE, include=FALSE}
+table(is.na(TM1R))
+names(TM1R) <- c("PitchCall", "PlateLocHeight", "PlateLocSide")
+#View(TM1R)
+```
+
+```{r, echo=FALSE, include=FALSE}
+TM1R$High <- rep(0, nrow(TM1R))
+TM1R$Low <- rep(0, nrow(TM1R))
+TM1R$Lefty <- rep(0, nrow(TM1R))
+TM1R$Righty <- rep(0, nrow(TM1R))
+TM1R$StrikeZone <- rep(0, nrow(TM1R))
+TM1R$CloseK <- rep(0, nrow(TM1R))
+TM1R$CloseB <- rep(0, nrow(TM1R))
+TM1R$CloseH <- rep(0, nrow(TM1R))
+for (i in 1:nrow(TM1R)) {
+  TM1R$High[i] <- ifelse(TM1R$PlateLocHeight[i] > 3.5, 1, 0)
+  TM1R$Low[i] <- ifelse(TM1R$PlateLocHeight[i] < 1.5, 1, 0)
+  TM1R$Lefty[i] <- ifelse(TM1R$PlateLocSide[i] < -0.8333333, 1, 0)
+  TM1R$Righty[i] <- ifelse(TM1R$PlateLocSide[i] > 0.8333333, 1, 0)
+  TM1R$StrikeZone[i] <- ifelse(TM1R$High[i] == 0 && TM1R$Low[i] == 0 && TM1R$Lefty[i] == 0 && TM1R$Righty[i] == 0, 1, 0)
+  if(0.5 < TM1R$PlateLocSide[i] && TM1R$PlateLocSide[i] < 0.8333333) TM1R$CloseK[i] <- 1
+  if(-0.5 > TM1R$PlateLocSide[i] && TM1R$PlateLocSide[i] > -0.8333333) TM1R$CloseK[i] <- 1
+  if(0.8333333 < TM1R$PlateLocSide[i] && TM1R$PlateLocSide[i] < 1.1) TM1R$CloseB[i] <- 1
+  if(-0.8333333 > TM1R$PlateLocSide[i] && TM1R$PlateLocSide[i] > -1.1) TM1R$CloseB[i] <- 1
+  if(1 < TM1R$PlateLocHeight[i] && TM1R$PlateLocHeight[i] < 4) TM1R$CloseH[i] <- 1
+}
+```
+
+```{r, echo=FALSE, include=FALSE}
+TM1R$KcalledB <- rep(0, nrow(TM1R))
+TM1R$BcalledK <- rep(0, nrow(TM1R))
+TM1R$KcalledK <- rep(0, nrow(TM1R))
+TM1R$BcalledB <- rep(0, nrow(TM1R))
+TM1R$Incorrect <- rep(0, nrow(TM1R))
+TM1R$Correct <- rep(0, nrow(TM1R))
+for (i in 1:nrow(TM1R)) {
+  TM1R$KcalledB[i] <- ifelse(TM1R$StrikeZone[i] == 1 && TM1R$PitchCall[i] == "BallCalled", 1, 0)
+  TM1R$BcalledK[i] <- ifelse(TM1R$StrikeZone[i] == 0 && TM1R$PitchCall[i] == "StrikeCalled", 1, 0)
+  TM1R$KcalledK[i] <- ifelse(TM1R$StrikeZone[i] == 1 && TM1R$PitchCall[i] == "StrikeCalled", 1, 0)
+  TM1R$BcalledB[i] <- ifelse(TM1R$StrikeZone[i] == 0 && TM1R$PitchCall[i] == "BallCalled", 1, 0)
+  if(TM1R$KcalledB[i] == 1) TM1R$Incorrect[i] <- 1
+  if(TM1R$BcalledK[i] == 1) TM1R$Incorrect[i] <- 1
+  if(TM1R$KcalledK[i] == 1) TM1R$Correct[i] <- 1
+  if(TM1R$BcalledB[i] == 1) TM1R$Correct[i] <- 1
+}
+```
+
+```{r, echo=FALSE, include=FALSE}
+KBsum <- sum(TM1R$KcalledB)
+BKsum <- sum(TM1R$BcalledK)
+KKsum <- sum(TM1R$KcalledK)
+BBsum <- sum(TM1R$BcalledB)
+accurate <- KKsum + BBsum
+inaccurate <- KBsum + BKsum
+strikes <- KBsum + KKsum
+balls <- BKsum + BBsum
+accurate
+inaccurate
+total <- accurate + inaccurate
+umpire <- matrix(c(KBsum, BKsum, inaccurate, (KKsum), BBsum, accurate, strikes, balls, total, round(KKsum/strikes, 3), round(BBsum/balls, 3), round(accurate/total, 3)), ncol = 3, byrow = TRUE)
+colnames(umpire) <- c("Zone", "No Zone", "Total")
+rownames(umpire) <- c("Incorrect", "Correct", "Total", "Accuracy")
+```
+
+Table showing umpire's accuracy:
+
+```{r, echo=FALSE}
+umpire
+```
+
+```{r, echo=FALSE, include=FALSE}
+thislist <- 0
+thislist2 <- 0
+thislist3 <- 0
+thislist4 <- 0
+thislist5 <- 0
+thislist6 <- 0
+for (i in 1:nrow(TM1R)) {
+  if(TM1R$Incorrect[i] == 1) thislist <- c(thislist, i)
+  if(TM1R$KcalledB[i] == 1) thislist2 <- c(thislist2, i)
+  if(TM1R$BcalledK[i] == 1) thislist3 <- c(thislist3, i)
+  if(TM1R$Correct[i] == 1) thislist4 <- c(thislist4, i)
+  if(TM1R$CloseK[i] == 1 && TM1R$KcalledK[i] == 1 && TM1R$CloseH[i] == 1) thislist5 <- c(thislist5, i)
+  if(TM1R$CloseB[i] == 1 && TM1R$Correct[i] == 1 && TM1R$CloseH[i] == 1) thislist6 <- c(thislist6, i)
+}
+TMWrong <- TM1R[thislist[-1],]
+TMKcalledB <- TM1R[thislist2[-1],]
+TMBcalledK <- TM1R[thislist3[-1],]
+TMCorrect <- TM1R[thislist4[-1],]
+TMCloseK <- TM1R[thislist5[-1],]
+TMCloseB <- TM1R[thislist6[-1],]
+nrow(TMWrong)
+nrow(TMKcalledB)
+nrow(TMBcalledK)
+nrow(TMCorrect)
+nrow(TMCloseK)
+nrow(TMCloseB)
+```
+
+```{r, echo=FALSE}
+library(ggplot2)
+ggplot(data = TMKcalledB, aes(PlateLocSide*-1, PlateLocHeight)) + geom_point(color = "orange") + geom_point(data = TMBcalledK, aes(PlateLocSide*-1, PlateLocHeight), color = "red") + geom_point(data = TMCloseK, aes(PlateLocSide*-1, PlateLocHeight), color = "blue") + geom_point(data = TMCloseB, aes(PlateLocSide*-1, PlateLocHeight), color = "green") + geom_vline(xintercept = -0.8333333) + geom_vline(xintercept = 0.8333333) + geom_hline(yintercept = 3.5) + geom_hline(yintercept = 1.5) + ggtitle("Behind Home View of Umpire's Close Calls") + xlab("") + ylab("") + theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r, echo=FALSE, include=FALSE}
+#View(TMWrong)
+thislist2 <- 0
+for (i in 1:nrow(TMWrong)) {
+  if(TMWrong$StrikeZone[i] == 0) thislist2 <- c(thislist2, i)
+}
+TMBalls <- TMWrong[thislist2[-1],]
+#View(TMBalls)
+missareaprop <- prop.table(c(sum(TMBalls$High), sum(TMBalls$Low), sum(TMBalls$Lefty), sum(TMBalls$Righty)))
+missarea <- matrix(c(sum(TMBalls$High), sum(TMBalls$Low), sum(TMBalls$Lefty), sum(TMBalls$Righty), sum(c(TMBalls$High, TMBalls$Low, TMBalls$Lefty, TMBalls$Righty)), round(missareaprop[1], 3), round(missareaprop[2], 3), round(missareaprop[3], 3), round(missareaprop[4], 3), 1), nrow = 2, byrow = TRUE)
+colnames(missarea) <- c("Up", "Down", "Lefty In", "Lefty Out", "Total")
+rownames(missarea) <- c("Misses", "Proportion")
+```
+
+Location of missed calls:
+
+```{r, echo=FALSE}
+missarea
+```
+
+\pagebreak
+
+# Umpire All
+
+```{r, echo=FALSE, include=FALSE}
+TM1$High <- rep(0, nrow(TM1))
+TM1$Low <- rep(0, nrow(TM1))
+TM1$Lefty <- rep(0, nrow(TM1))
+TM1$Righty <- rep(0, nrow(TM1))
+TM1$StrikeZone <- rep(0, nrow(TM1))
+TM1$CloseK <- rep(0, nrow(TM1))
+TM1$CloseB <- rep(0, nrow(TM1))
+TM1$CloseH <- rep(0, nrow(TM1))
+for (i in 1:nrow(TM1)) {
+  TM1$High[i] <- ifelse(TM1$PlateLocHeight[i] > 3.5, 1, 0)
+  TM1$Low[i] <- ifelse(TM1$PlateLocHeight[i] < 1.5, 1, 0)
+  TM1$Lefty[i] <- ifelse(TM1$PlateLocSide[i] < -0.8333333, 1, 0)
+  TM1$Righty[i] <- ifelse(TM1$PlateLocSide[i] > 0.8333333, 1, 0)
+  TM1$StrikeZone[i] <- ifelse(TM1$High[i] == 0 && TM1$Low[i] == 0 && TM1$Lefty[i] == 0 && TM1$Righty[i] == 0, 1, 0)
+  if(0.5 < TM1$PlateLocSide[i] && TM1$PlateLocSide[i] < 0.8333333) TM1$CloseK[i] <- 1
+  if(-0.5 > TM1$PlateLocSide[i] && TM1$PlateLocSide[i] > -0.8333333) TM1$CloseK[i] <- 1
+  if(0.8333333 < TM1$PlateLocSide[i] && TM1$PlateLocSide[i] < 1.1) TM1$CloseB[i] <- 1
+  if(-0.8333333 > TM1$PlateLocSide[i] && TM1$PlateLocSide[i] > -1.1) TM1$CloseB[i] <- 1
+  if(1 < TM1$PlateLocHeight[i] && TM1$PlateLocHeight[i] < 4) TM1$CloseH[i] <- 1
+}
+```
+
+```{r, echo=FALSE, include=FALSE}
+TM1$KcalledB <- rep(0, nrow(TM1))
+TM1$BcalledK <- rep(0, nrow(TM1))
+TM1$KcalledK <- rep(0, nrow(TM1))
+TM1$BcalledB <- rep(0, nrow(TM1))
+TM1$Incorrect <- rep(0, nrow(TM1))
+TM1$Correct <- rep(0, nrow(TM1))
+for (i in 1:nrow(TM1)) {
+  TM1$KcalledB[i] <- ifelse(TM1$StrikeZone[i] == 1 && TM1$PitchCall[i] == "BallCalled", 1, 0)
+  TM1$BcalledK[i] <- ifelse(TM1$StrikeZone[i] == 0 && TM1$PitchCall[i] == "StrikeCalled", 1, 0)
+  TM1$KcalledK[i] <- ifelse(TM1$StrikeZone[i] == 1 && TM1$PitchCall[i] == "StrikeCalled", 1, 0)
+  TM1$BcalledB[i] <- ifelse(TM1$StrikeZone[i] == 0 && TM1$PitchCall[i] == "BallCalled", 1, 0)
+  if(TM1$KcalledB[i] == 1) TM1$Incorrect[i] <- 1
+  if(TM1$BcalledK[i] == 1) TM1$Incorrect[i] <- 1
+  if(TM1$KcalledK[i] == 1) TM1$Correct[i] <- 1
+  if(TM1$BcalledB[i] == 1) TM1$Correct[i] <- 1
+}
+```
+
+```{r, echo=FALSE, include=FALSE}
+KBsum <- sum(TM1$KcalledB)
+BKsum <- sum(TM1$BcalledK)
+KKsum <- sum(TM1$KcalledK)
+BBsum <- sum(TM1$BcalledB)
+accurate <- KKsum + BBsum
+inaccurate <- KBsum + BKsum
+strikes <- KBsum + KKsum
+balls <- BKsum + BBsum
+accurate
+inaccurate
+total <- accurate + inaccurate
+umpire <- matrix(c(KBsum, BKsum, inaccurate, (KKsum), BBsum, accurate, strikes, balls, total, round(KKsum/strikes, 3), round(BBsum/balls, 3), round(accurate/total, 3)), ncol = 3, byrow = TRUE)
+colnames(umpire) <- c("Zone", "No Zone", "Total")
+rownames(umpire) <- c("Incorrect", "Correct", "Total", "Accuracy")
+```
+
+Table showing umpire's accuracy:
+
+```{r, echo=FALSE}
+umpire
+```
+
+```{r, echo=FALSE, include=FALSE}
+thislist <- 0
+thislist2 <- 0
+thislist3 <- 0
+thislist4 <- 0
+thislist5 <- 0
+thislist6 <- 0
+for (i in 1:nrow(TM1)) {
+  if(TM1$Incorrect[i] == 1) thislist <- c(thislist, i)
+  if(TM1$KcalledB[i] == 1) thislist2 <- c(thislist2, i)
+  if(TM1$BcalledK[i] == 1) thislist3 <- c(thislist3, i)
+  if(TM1$Correct[i] == 1) thislist4 <- c(thislist4, i)
+  if(TM1$CloseK[i] == 1 && TM1$KcalledK[i] == 1 && TM1$CloseH[i] == 1) thislist5 <- c(thislist5, i)
+  if(TM1$CloseB[i] == 1 && TM1$Correct[i] == 1 && TM1$CloseH[i] == 1) thislist6 <- c(thislist6, i)
+}
+TMWrong <- TM1[thislist[-1],]
+TMKcalledB <- TM1[thislist2[-1],]
+TMBcalledK <- TM1[thislist3[-1],]
+TMCorrect <- TM1[thislist4[-1],]
+TMCloseK <- TM1[thislist5[-1],]
+TMCloseB <- TM1[thislist6[-1],]
+nrow(TMWrong)
+nrow(TMKcalledB)
+nrow(TMBcalledK)
+nrow(TMCorrect)
+nrow(TMCloseK)
+nrow(TMCloseB)
+```
+
+```{r, echo=FALSE}
+library(ggplot2)
+ggplot(data = TMKcalledB, aes(PlateLocSide*-1, PlateLocHeight)) + geom_point(color = "orange") + geom_point(data = TMBcalledK, aes(PlateLocSide*-1, PlateLocHeight), color = "red") + geom_point(data = TMCloseK, aes(PlateLocSide*-1, PlateLocHeight), color = "blue") + geom_point(data = TMCloseB, aes(PlateLocSide*-1, PlateLocHeight), color = "green") + geom_vline(xintercept = -0.8333333) + geom_vline(xintercept = 0.8333333) + geom_hline(yintercept = 3.5) + geom_hline(yintercept = 1.5) + ggtitle("Behind Home View of Umpire's Close Calls") + xlab("") + ylab("") + theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r, echo=FALSE, include=FALSE}
+#View(TMWrong)
+thislist2 <- 0
+for (i in 1:nrow(TMWrong)) {
+  if(TMWrong$StrikeZone[i] == 0) thislist2 <- c(thislist2, i)
+}
+TMBalls <- TMWrong[thislist2[-1],]
+#View(TMBalls)
+missareaprop <- prop.table(c(sum(TMBalls$High), sum(TMBalls$Low), sum(TMBalls$Lefty), sum(TMBalls$Righty)))
+missarea <- matrix(c(sum(TMBalls$High), sum(TMBalls$Low), sum(TMBalls$Lefty), sum(TMBalls$Righty), sum(c(TMBalls$High, TMBalls$Low, TMBalls$Lefty, TMBalls$Righty)), round(missareaprop[1], 3), round(missareaprop[2], 3), round(missareaprop[3], 3), round(missareaprop[4], 3), 1), nrow = 2, byrow = TRUE)
+colnames(missarea) <- c("Up", "Down", "Lefty In", "Righty In", "Total")
+rownames(missarea) <- c("Misses", "Proportion")
+```
+
+Location of missed calls:
+
+```{r, echo=FALSE}
+missarea
+```
+
+\pagebreak
+
+```{r, echo=FALSE, include=FALSE}
+Ump1L <- Umpire[which(Umpire$PitcherTeam == "UCLA"),]
+Ump1R <- Umpire[which(Umpire$PitcherTeam != "UCLA"),]
+TM1L <- Ump1L[,c(22,41,42)]
+TM1R <- Ump1R[,c(22,41,42)]
+```
+
+# Umpire for UCLA
+
+```{r, echo=FALSE, include=FALSE}
+table(is.na(TM1L))
+names(TM1L) <- c("PitchCall", "PlateLocHeight", "PlateLocSide")
+#View(TM1L)
+```
+
+```{r, echo=FALSE, include=FALSE}
+TM1L$High <- rep(0, nrow(TM1L))
+TM1L$Low <- rep(0, nrow(TM1L))
+TM1L$Lefty <- rep(0, nrow(TM1L))
+TM1L$Righty <- rep(0, nrow(TM1L))
+TM1L$StrikeZone <- rep(0, nrow(TM1L))
+TM1L$CloseK <- rep(0, nrow(TM1L))
+TM1L$CloseB <- rep(0, nrow(TM1L))
+TM1L$CloseH <- rep(0, nrow(TM1L))
+for (i in 1:nrow(TM1L)) {
+  TM1L$High[i] <- ifelse(TM1L$PlateLocHeight[i] > 3.5, 1, 0)
+  TM1L$Low[i] <- ifelse(TM1L$PlateLocHeight[i] < 1.5, 1, 0)
+  TM1L$Lefty[i] <- ifelse(TM1L$PlateLocSide[i] < -0.8333333, 1, 0)
+  TM1L$Righty[i] <- ifelse(TM1L$PlateLocSide[i] > 0.8333333, 1, 0)
+  TM1L$StrikeZone[i] <- ifelse(TM1L$High[i] == 0 && TM1L$Low[i] == 0 && TM1L$Lefty[i] == 0 && TM1L$Righty[i] == 0, 1, 0)
+  if(0.5 < TM1L$PlateLocSide[i] && TM1L$PlateLocSide[i] < 0.8333333) TM1L$CloseK[i] <- 1
+  if(-0.5 > TM1L$PlateLocSide[i] && TM1L$PlateLocSide[i] > -0.8333333) TM1L$CloseK[i] <- 1
+  if(0.8333333 < TM1L$PlateLocSide[i] && TM1L$PlateLocSide[i] < 1.1) TM1L$CloseB[i] <- 1
+  if(-0.8333333 > TM1L$PlateLocSide[i] && TM1L$PlateLocSide[i] > -1.1) TM1L$CloseB[i] <- 1
+  if(1 < TM1L$PlateLocHeight[i] && TM1L$PlateLocHeight[i] < 4) TM1L$CloseH[i] <- 1
+}
+```
+
+```{r, echo=FALSE, include=FALSE}
+TM1L$KcalledB <- rep(0, nrow(TM1L))
+TM1L$BcalledK <- rep(0, nrow(TM1L))
+TM1L$KcalledK <- rep(0, nrow(TM1L))
+TM1L$BcalledB <- rep(0, nrow(TM1L))
+TM1L$Incorrect <- rep(0, nrow(TM1L))
+TM1L$Correct <- rep(0, nrow(TM1L))
+for (i in 1:nrow(TM1L)) {
+  TM1L$KcalledB[i] <- ifelse(TM1L$StrikeZone[i] == 1 && TM1L$PitchCall[i] == "BallCalled", 1, 0)
+  TM1L$BcalledK[i] <- ifelse(TM1L$StrikeZone[i] == 0 && TM1L$PitchCall[i] == "StrikeCalled", 1, 0)
+  TM1L$KcalledK[i] <- ifelse(TM1L$StrikeZone[i] == 1 && TM1L$PitchCall[i] == "StrikeCalled", 1, 0)
+  TM1L$BcalledB[i] <- ifelse(TM1L$StrikeZone[i] == 0 && TM1L$PitchCall[i] == "BallCalled", 1, 0)
+  if(TM1L$KcalledB[i] == 1) TM1L$Incorrect[i] <- 1
+  if(TM1L$BcalledK[i] == 1) TM1L$Incorrect[i] <- 1
+  if(TM1L$KcalledK[i] == 1) TM1L$Correct[i] <- 1
+  if(TM1L$BcalledB[i] == 1) TM1L$Correct[i] <- 1
+}
+```
+
+```{r, echo=FALSE, include=FALSE}
+KBsum <- sum(TM1L$KcalledB)
+BKsum <- sum(TM1L$BcalledK)
+KKsum <- sum(TM1L$KcalledK)
+BBsum <- sum(TM1L$BcalledB)
+accurate <- KKsum + BBsum
+inaccurate <- KBsum + BKsum
+strikes <- KBsum + KKsum
+balls <- BKsum + BBsum
+accurate
+inaccurate
+total <- accurate + inaccurate
+umpire <- matrix(c(KBsum, BKsum, inaccurate, (KKsum), BBsum, accurate, strikes, balls, total, round(KKsum/strikes, 3), round(BBsum/balls, 3), round(accurate/total, 3)), ncol = 3, byrow = TRUE)
+colnames(umpire) <- c("Zone", "No Zone", "Total")
+rownames(umpire) <- c("Incorrect", "Correct", "Total", "Accuracy")
+```
+
+Table showing umpire's accuracy:
+
+```{r, echo=FALSE}
+umpire
+```
+
+```{r, echo=FALSE, include=FALSE}
+thislist <- 0
+thislist2 <- 0
+thislist3 <- 0
+thislist4 <- 0
+thislist5 <- 0
+thislist6 <- 0
+for (i in 1:nrow(TM1L)) {
+  if(TM1L$Incorrect[i] == 1) thislist <- c(thislist, i)
+  if(TM1L$KcalledB[i] == 1) thislist2 <- c(thislist2, i)
+  if(TM1L$BcalledK[i] == 1) thislist3 <- c(thislist3, i)
+  if(TM1L$Correct[i] == 1) thislist4 <- c(thislist4, i)
+  if(TM1L$CloseK[i] == 1 && TM1L$KcalledK[i] == 1 && TM1L$CloseH[i] == 1) thislist5 <- c(thislist5, i)
+  if(TM1L$CloseB[i] == 1 && TM1L$Correct[i] == 1 && TM1L$CloseH[i] == 1) thislist6 <- c(thislist6, i)
+}
+TMWrong <- TM1L[thislist[-1],]
+TMKcalledB <- TM1L[thislist2[-1],]
+TMBcalledK <- TM1L[thislist3[-1],]
+TMCorrect <- TM1L[thislist4[-1],]
+TMCloseK <- TM1L[thislist5[-1],]
+TMCloseB <- TM1L[thislist6[-1],]
+nrow(TMWrong)
+nrow(TMKcalledB)
+nrow(TMBcalledK)
+nrow(TMCorrect)
+nrow(TMCloseK)
+nrow(TMCloseB)
+```
+
+```{r, echo=FALSE}
+library(ggplot2)
+ggplot(data = TMKcalledB, aes(PlateLocSide*-1, PlateLocHeight)) + geom_point(color = "orange") + geom_point(data = TMBcalledK, aes(PlateLocSide*-1, PlateLocHeight), color = "red") + geom_point(data = TMCloseK, aes(PlateLocSide*-1, PlateLocHeight), color = "blue") + geom_point(data = TMCloseB, aes(PlateLocSide*-1, PlateLocHeight), color = "green") + geom_vline(xintercept = -0.8333333) + geom_vline(xintercept = 0.8333333) + geom_hline(yintercept = 3.5) + geom_hline(yintercept = 1.5) + ggtitle("Behind Home View of Umpire's Close Calls") + xlab("") + ylab("") + theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r, echo=FALSE, include=FALSE}
+#View(TMWrong)
+thislist2 <- 0
+for (i in 1:nrow(TMWrong)) {
+  if(TMWrong$StrikeZone[i] == 0) thislist2 <- c(thislist2, i)
+}
+TMBalls <- TMWrong[thislist2[-1],]
+#View(TMBalls)
+missareaprop <- prop.table(c(sum(TMBalls$High), sum(TMBalls$Low), sum(TMBalls$Lefty), sum(TMBalls$Righty)))
+missarea <- matrix(c(sum(TMBalls$High), sum(TMBalls$Low), sum(TMBalls$Lefty), sum(TMBalls$Righty), sum(c(TMBalls$High, TMBalls$Low, TMBalls$Lefty, TMBalls$Righty)), round(missareaprop[1], 3), round(missareaprop[2], 3), round(missareaprop[3], 3), round(missareaprop[4], 3), 1), nrow = 2, byrow = TRUE)
+colnames(missarea) <- c("Up", "Down", "Lefty In", "Lefty Out", "Total")
+rownames(missarea) <- c("Misses", "Proportion")
+```
+
+Location of missed calls:
+
+```{r, echo=FALSE}
+missarea
+```
+
+\pagebreak
+
+# Umpire for UC Riverside
+
+```{r, echo=FALSE, include=FALSE}
+table(is.na(TM1R))
+names(TM1R) <- c("PitchCall", "PlateLocHeight", "PlateLocSide")
+#View(TM1R)
+```
+
+```{r, echo=FALSE, include=FALSE}
+TM1R$High <- rep(0, nrow(TM1R))
+TM1R$Low <- rep(0, nrow(TM1R))
+TM1R$Lefty <- rep(0, nrow(TM1R))
+TM1R$Righty <- rep(0, nrow(TM1R))
+TM1R$StrikeZone <- rep(0, nrow(TM1R))
+TM1R$CloseK <- rep(0, nrow(TM1R))
+TM1R$CloseB <- rep(0, nrow(TM1R))
+TM1R$CloseH <- rep(0, nrow(TM1R))
+for (i in 1:nrow(TM1R)) {
+  TM1R$High[i] <- ifelse(TM1R$PlateLocHeight[i] > 3.5, 1, 0)
+  TM1R$Low[i] <- ifelse(TM1R$PlateLocHeight[i] < 1.5, 1, 0)
+  TM1R$Lefty[i] <- ifelse(TM1R$PlateLocSide[i] < -0.8333333, 1, 0)
+  TM1R$Righty[i] <- ifelse(TM1R$PlateLocSide[i] > 0.8333333, 1, 0)
+  TM1R$StrikeZone[i] <- ifelse(TM1R$High[i] == 0 && TM1R$Low[i] == 0 && TM1R$Lefty[i] == 0 && TM1R$Righty[i] == 0, 1, 0)
+  if(0.5 < TM1R$PlateLocSide[i] && TM1R$PlateLocSide[i] < 0.8333333) TM1R$CloseK[i] <- 1
+  if(-0.5 > TM1R$PlateLocSide[i] && TM1R$PlateLocSide[i] > -0.8333333) TM1R$CloseK[i] <- 1
+  if(0.8333333 < TM1R$PlateLocSide[i] && TM1R$PlateLocSide[i] < 1.1) TM1R$CloseB[i] <- 1
+  if(-0.8333333 > TM1R$PlateLocSide[i] && TM1R$PlateLocSide[i] > -1.1) TM1R$CloseB[i] <- 1
+  if(1 < TM1R$PlateLocHeight[i] && TM1R$PlateLocHeight[i] < 4) TM1R$CloseH[i] <- 1
+}
+```
+
+```{r, echo=FALSE, include=FALSE}
+TM1R$KcalledB <- rep(0, nrow(TM1R))
+TM1R$BcalledK <- rep(0, nrow(TM1R))
+TM1R$KcalledK <- rep(0, nrow(TM1R))
+TM1R$BcalledB <- rep(0, nrow(TM1R))
+TM1R$Incorrect <- rep(0, nrow(TM1R))
+TM1R$Correct <- rep(0, nrow(TM1R))
+for (i in 1:nrow(TM1R)) {
+  TM1R$KcalledB[i] <- ifelse(TM1R$StrikeZone[i] == 1 && TM1R$PitchCall[i] == "BallCalled", 1, 0)
+  TM1R$BcalledK[i] <- ifelse(TM1R$StrikeZone[i] == 0 && TM1R$PitchCall[i] == "StrikeCalled", 1, 0)
+  TM1R$KcalledK[i] <- ifelse(TM1R$StrikeZone[i] == 1 && TM1R$PitchCall[i] == "StrikeCalled", 1, 0)
+  TM1R$BcalledB[i] <- ifelse(TM1R$StrikeZone[i] == 0 && TM1R$PitchCall[i] == "BallCalled", 1, 0)
+  if(TM1R$KcalledB[i] == 1) TM1R$Incorrect[i] <- 1
+  if(TM1R$BcalledK[i] == 1) TM1R$Incorrect[i] <- 1
+  if(TM1R$KcalledK[i] == 1) TM1R$Correct[i] <- 1
+  if(TM1R$BcalledB[i] == 1) TM1R$Correct[i] <- 1
+}
+```
+
+```{r, echo=FALSE, include=FALSE}
+KBsum <- sum(TM1R$KcalledB)
+BKsum <- sum(TM1R$BcalledK)
+KKsum <- sum(TM1R$KcalledK)
+BBsum <- sum(TM1R$BcalledB)
+accurate <- KKsum + BBsum
+inaccurate <- KBsum + BKsum
+strikes <- KBsum + KKsum
+balls <- BKsum + BBsum
+accurate
+inaccurate
+total <- accurate + inaccurate
+umpire <- matrix(c(KBsum, BKsum, inaccurate, (KKsum), BBsum, accurate, strikes, balls, total, round(KKsum/strikes, 3), round(BBsum/balls, 3), round(accurate/total, 3)), ncol = 3, byrow = TRUE)
+colnames(umpire) <- c("Zone", "No Zone", "Total")
+rownames(umpire) <- c("Incorrect", "Correct", "Total", "Accuracy")
+```
+
+Table showing umpire's accuracy:
+
+```{r, echo=FALSE}
+umpire
+```
+
+```{r, echo=FALSE, include=FALSE}
+thislist <- 0
+thislist2 <- 0
+thislist3 <- 0
+thislist4 <- 0
+thislist5 <- 0
+thislist6 <- 0
+for (i in 1:nrow(TM1R)) {
+  if(TM1R$Incorrect[i] == 1) thislist <- c(thislist, i)
+  if(TM1R$KcalledB[i] == 1) thislist2 <- c(thislist2, i)
+  if(TM1R$BcalledK[i] == 1) thislist3 <- c(thislist3, i)
+  if(TM1R$Correct[i] == 1) thislist4 <- c(thislist4, i)
+  if(TM1R$CloseK[i] == 1 && TM1R$KcalledK[i] == 1 && TM1R$CloseH[i] == 1) thislist5 <- c(thislist5, i)
+  if(TM1R$CloseB[i] == 1 && TM1R$Correct[i] == 1 && TM1R$CloseH[i] == 1) thislist6 <- c(thislist6, i)
+}
+TMWrong <- TM1R[thislist[-1],]
+TMKcalledB <- TM1R[thislist2[-1],]
+TMBcalledK <- TM1R[thislist3[-1],]
+TMCorrect <- TM1R[thislist4[-1],]
+TMCloseK <- TM1R[thislist5[-1],]
+TMCloseB <- TM1R[thislist6[-1],]
+nrow(TMWrong)
+nrow(TMKcalledB)
+nrow(TMBcalledK)
+nrow(TMCorrect)
+nrow(TMCloseK)
+nrow(TMCloseB)
+```
+
+```{r, echo=FALSE}
+library(ggplot2)
+ggplot(data = TMKcalledB, aes(PlateLocSide*-1, PlateLocHeight)) + geom_point(color = "orange") + geom_point(data = TMBcalledK, aes(PlateLocSide*-1, PlateLocHeight), color = "red") + geom_point(data = TMCloseK, aes(PlateLocSide*-1, PlateLocHeight), color = "blue") + geom_point(data = TMCloseB, aes(PlateLocSide*-1, PlateLocHeight), color = "green") + geom_vline(xintercept = -0.8333333) + geom_vline(xintercept = 0.8333333) + geom_hline(yintercept = 3.5) + geom_hline(yintercept = 1.5) + ggtitle("Behind Home View of Umpire's Close Calls") + xlab("") + ylab("") + theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r, echo=FALSE, include=FALSE}
+#View(TMWrong)
+thislist2 <- 0
+for (i in 1:nrow(TMWrong)) {
+  if(TMWrong$StrikeZone[i] == 0) thislist2 <- c(thislist2, i)
+}
+TMBalls <- TMWrong[thislist2[-1],]
+#View(TMBalls)
+missareaprop <- prop.table(c(sum(TMBalls$High), sum(TMBalls$Low), sum(TMBalls$Lefty), sum(TMBalls$Righty)))
+missarea <- matrix(c(sum(TMBalls$High), sum(TMBalls$Low), sum(TMBalls$Lefty), sum(TMBalls$Righty), sum(c(TMBalls$High, TMBalls$Low, TMBalls$Lefty, TMBalls$Righty)), round(missareaprop[1], 3), round(missareaprop[2], 3), round(missareaprop[3], 3), round(missareaprop[4], 3), 1), nrow = 2, byrow = TRUE)
+colnames(missarea) <- c("Up", "Down", "Lefty In", "Lefty Out", "Total")
+rownames(missarea) <- c("Misses", "Proportion")
+```
+
+Location of missed calls:
+
+```{r, echo=FALSE}
+missarea
+```

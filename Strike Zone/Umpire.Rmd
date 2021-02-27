@@ -1,0 +1,28 @@
+---
+title: "Umpire"
+author: "Jacob Samuels"
+date: "2/21/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE, include=FALSE}
+source("Umpire.R")
+```
+
+```{r, echo=FALSE, include=FALSE}
+library(readr)
+library(dplyr)
+library(ggplot2)
+Trackman <- read_csv("~/UCLA Baseball/2020 CSVs/2-18-20 vs LMU Game File.csv")
+Umpire <- Trackman[,c(22,41,42)] %>% filter(PitchCall != "BallIntentional")
+table(is.na(Umpire))
+```
+
+```{r, echo=FALSE}
+Umpire_Zone(Trackman)
+```
+

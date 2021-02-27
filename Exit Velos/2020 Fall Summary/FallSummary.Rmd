@@ -1,0 +1,173 @@
+---
+title: "Hard Hit Totals"
+author: "Jacob Samuels"
+date: "11/26/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, echo=FALSE, include=FALSE}
+library(readr)
+library(dplyr)
+library(stringr)
+library(tidyr)
+
+TrackMan <- read_csv("~/UCLA Baseball/Fall 2020 CSVs/FallThru11-24.csv", skip = 4)
+                                  ## CHANGE DATE DOWN BELOW IN PDF TITLE
+
+Name_organizer <- function(Names, row) {
+  Name.List <- str_split(Names, ", ")
+  Name <- str_glue(Name.List[[row]][2], Name.List[[row]][1], .sep = " ")
+  Name
+}
+
+for (i in 1:nrow(TrackMan)) {
+  TrackMan$Batter[i] <- Name_organizer(TrackMan$Batter, i)
+  if (TrackMan$Batter[i] == "Patrick Caufield") TrackMan$Batter[i] <- "Patrick Caulfield"
+}
+```
+
+
+```{r, echo=FALSE}
+Hard_Hits <- TrackMan %>% 
+  filter(ExitSpeed >= 90, PitchCall == "InPlay", HitType != "Bunt") %>% 
+  mutate(ExitVelo = round(ExitSpeed, 1)) %>% 
+  arrange(desc(ExitSpeed)) %>% 
+  select(Batter, Date, "Exit Velo" = ExitVelo, 
+         "Hit Type" = HitType, "Play Result" = PlayResult)
+write_csv(Hard_Hits, "~/UCLA Baseball/Exit Velos/2020 Fall Hard Hits.csv")
+```
+
+
+```{r, echo=FALSE}
+Count <- Hard_Hits %>% group_by(Batter) %>% count(Batter) %>%  
+  select(Batter, Count = n) %>% arrange(desc(Count))
+TotalBIP <- TrackMan %>% filter(PitchCall == "InPlay", HitType != "Bunt", 
+                                !is.na(ExitSpeed), !is.na(Angle)) %>% 
+  group_by(Batter) %>% count(Batter) %>%  
+  select(Batter, BIP = n) %>% arrange(desc(BIP))
+
+TotalBIP <- rbind(TotalBIP, data.frame(Batter = "Team Totals", BIP = sum(TotalBIP$BIP))) %>% 
+  arrange(Batter)
+
+combined <- merge(Count, TotalBIP, all.y = TRUE)
+combined[4,2] <- 0
+HHrate <- combined %>% mutate(Rate = round(Count/BIP*100)) %>% arrange(desc(Rate))
+
+names(HHrate)[-1] <- c("Hard Hits", "Total BIP", "Hard Hit Rate (%)")
+
+write_csv(HHrate, "~/UCLA Baseball/Exit Velos/Hard Hit Rate.csv")
+```
+
+```{r}
+ExitVelo <- TrackMan %>% 
+  filter(PitchCall == "InPlay", HitType != "Bunt", !is.na(ExitSpeed)) %>% 
+  group_by(Batter) %>% summarise(Avg = round(mean(ExitSpeed), 1)) %>% 
+  select(Batter, Avg) %>% arrange(desc(Avg))
+names(ExitVelo)[2] <- "Average Exit Velo"
+
+write_csv(ExitVelo, "~/UCLA Baseball/Exit Velos/Average Exit Velocity.csv")
+```
+
+```{r}
+LaunchAngle <- TrackMan %>% 
+  filter(PitchCall == "InPlay", HitType != "Bunt", !is.na(Angle)) %>% 
+  group_by(Batter) %>% summarise(Avg = round(mean(Angle), 1)) %>% 
+  select(Batter, Avg) %>% arrange(desc(Avg))
+names(LaunchAngle)[2] <- "Average Launch Angle"
+
+write_csv(LaunchAngle, "~/UCLA Baseball/Exit Velos/2020 Fall Summary/Average Launch Angle.csv")
+```
+
+
+```{r}
+SweetSpot <- TrackMan %>% 
+  filter(PitchCall == "InPlay", HitType != "Bunt", Angle >= 8, Angle <= 32) %>% 
+  group_by(Batter) %>% count(Batter) %>%  
+  select(Batter, Count = n)
+both <- merge(SweetSpot, TotalBIP, all.y = TRUE)
+
+SSRate <- both %>% mutate(Rate = round(Count/BIP, 2)) %>% arrange(desc(Rate))
+
+names(SSRate)[-1] <- c("Sweet Spots", "Total BIP", "SwSp%")
+
+write_csv(SSRate, "~/UCLA Baseball/Exit Velos/2020 Fall Summary/Sweet Spot Rate.csv")
+```
+
+```{r}
+BIP <- TrackMan %>% filter(PitchCall == "InPlay", HitType != "Bunt", !is.na(ExitSpeed), !is.na(Angle))
+BIP$BBtype <- NA
+
+for (i in 1:nrow(BIP)) {
+  speed <- BIP$ExitSpeed[i]
+  angle <- BIP$Angle[i]
+  
+  if ((speed * 1.5 - angle) >= 117 && (speed + angle) >= 119 && 
+      speed >= 98 && angle >= 4 && angle <= 50) BIP$BBtype[i] <- 6 ## Barrel
+  
+  else if ((speed * 1.5 - angle) >= 111 && (speed + angle) >= 119 && 
+           speed >= 95 && angle >= 0 && angle <= 52) BIP$BBtype[i] <- 5 ## Solid Contact
+  
+  else if (speed <= 59) BIP$BBtype[i] <- 1 ## Poorly/Weak
+  
+  else if ((speed * 2 - angle) >= 87 && angle <= 41 && (speed * 2 + angle) <= 175 &&
+           (speed + angle * 1.3) >= 89 && speed >= 59 && speed <= 72) BIP$BBtype[i] <- 4
+  
+  else if ((speed + angle * 1.3) <= 112 && (speed + angle * 1.55) >= 92 &&
+           speed >= 72 && speed <= 86) BIP$BBtype[i] <- 4 ## Flare/Burner
+  
+  else if (angle <= 20 && (speed + angle * 2.4) >= 98 && 
+           speed >= 86 && speed <= 95) BIP$BBtype[i] <- 4 ## Flare/Burner
+  
+  else if ((speed - angle) >= 76 && (speed + angle * 2.4) >= 98 &&
+           speed >= 95 && angle <= 30) BIP$BBtype[i] <- 4 ## Flare/Burner
+  
+  else if ((speed + angle * 2) >= 116) BIP$BBtype[i] <- 3 ## Poorly/Under
+  
+  else if ((speed + angle * 2) <= 116) BIP$BBtype[i] <- 2 ## Poorly/Topped
+  
+  else BIP$BBtype[i] <- 0 ## Unclassified
+}
+
+BIP %>% select(Batter, ExitSpeed, Angle, BBtype)
+prop.table(table(BIP$BBtype))
+
+a <- c(10286, 83859, 63179, 62071, 14888, 17741)
+prop.table(a)
+```
+
+```{r}
+BIPtypes <- c("Poorly/Weak (%)", "Poorly/Topped (%)", "Poorly/Under (%)", 
+              "Flare/Burner (%)", "Solid Contact (%)", "Barrel (%)")
+
+grouped <- BIP %>% group_by(Batter, BBtype) %>% tally()
+
+totals <- BIP %>% group_by(BBtype) %>% tally()
+
+totes <- cbind(Batter = rep("Team Totals", 6), totals)
+
+Groupss <- rbind(grouped, totes)
+
+BallsInPlay <- BIP %>% count(Batter)
+
+wide <- pivot_wider(Groupss, names_from = BBtype, values_from = n)
+wide[is.na(wide)] <- 0
+names(wide)[2:7] <- c("one", "two", "three", "four", "five", "six")
+
+scale2 <- function(x) round(x/TotalBIP$BIP,2)
+
+BattedBalls <- merge(TotalBIP, wide, all.y = TRUE) %>% mutate_at(.vars = 3:8, .funs = scale2) %>% 
+  arrange(desc(six), desc(five), desc(four), desc(three), desc(two), desc(one), desc(BIP))
+
+names(BattedBalls)[-1] <- c("Total BIP", BIPtypes)
+
+BBEs <- BattedBalls[c(1:7,9:18,8),c(1:2,8:3)]
+
+write_csv(BBEs, "~/UCLA Baseball/Exit Velos/2020 Fall Summary/Batted Ball Types.csv")
+```
+
+

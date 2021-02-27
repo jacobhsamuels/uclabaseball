@@ -1,0 +1,42 @@
+---
+title: "Average Exit Velocities"
+author: "Jacob Samuels"
+date: "Through 1/31/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE, include=FALSE}
+library(readr)
+library(tidyverse)
+library(gridExtra)
+library(grid)
+
+Winter_2020_Game_Files <- read_csv("~/UCLA Baseball/Fall 2019 CSVs/Winter 2020 Thru 2-1.csv", skip = 3)
+
+WINTER <- Winter_2020_Game_Files %>% filter(Batter == "Cardenas, Noah"| Batter == "Caufield, Patrick"| Batter == "Cuellar, Kyle"| Batter == "Curialle, Michael"| Batter == "Filby, Jack"| Batter == "Hahn, Josh"| Batter == "Kendall, Kevin"| Batter == "McInerny, Will"| Batter == "McLain, Matt"| Batter == "Mitchell, Garrett"| Batter == "Moberg, Jake"| Batter == "Perez, Michael"| Batter == "Perez, Mikey"| Batter == "Perry, Darius"| Batter == "Prendiz, Jordan"| Batter == "Schwartz, JT"| Batter == "Silva, Jarron"| Batter == "Teijeiro, RJ")
+winter <- WINTER %>% filter(!is.na(ExitSpeed), PitchCall == "InPlay", HitType != "Bunt") %>% select(Batter, ExitSpeed)
+```
+
+```{r, echo=FALSE}
+AB <- WINTER %>% mutate(Ab =  rep(1, nrow(WINTER))) %>% 
+  filter(PlayResult == "Single" | PlayResult == "Double" | 
+           PlayResult == "Triple" | PlayResult == "HomeRun" | 
+           PlayResult == "Error" | PlayResult == "FieldersChoice" | 
+           PlayResult == "Out" | KorBB == "Strikeout", HitType != "Bunt")
+
+ABMikey <- str_replace_all(AB$Batter, "Perez, Michael", "Perez, Mikey")
+ABFirstLast <- str_replace(ABMikey, "(\\w+), (\\w+)", "\\2 \\1")
+AtBATS <- data.frame(ABFirstLast, Ab = AB$Ab) %>% group_by(ABFirstLast) %>% summarise(sum(Ab))
+Mikey <- str_replace_all(winter$Batter, "Perez, Michael", "Perez, Mikey")
+FirstLast <- str_replace(Mikey, "(\\w+), (\\w+)", "\\2 \\1")
+Winter <- data.frame(FirstLast, Exit = winter$ExitSpeed)
+ExitVelo <- Winter %>% mutate(BIP =  rep(1, nrow(winter)), Hard = ifelse(Exit >= 90, 1, 0)) %>% group_by(Batter = FirstLast) %>% summarise("Exit Velo" = round(mean(Exit), 1), Hard = sum(Hard), BIP = sum(BIP)) %>% mutate(AB = AtBATS$`sum(Ab)`, round(Hard/BIP*100), round(Hard/AB*100)) %>% arrange(desc(round(Hard/AB*100)), desc(round(Hard/BIP*100)))
+colnames(ExitVelo)[3:7] <- c("Hard Hits", "Balls In Play", "At Bats", "Hard Hit Per BIP (%)", "Hard Hit Per AB (%)")
+pdf(file = "Exit Velos.pdf", height = 12, width = 10)
+grid.table(ExitVelo)
+```
+

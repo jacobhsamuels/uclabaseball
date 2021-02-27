@@ -1,0 +1,57 @@
+---
+title: "Bauer Units"
+author: "Jacob Samuels"
+date: "2/1/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE, include=FALSE}
+library(readr)
+library(dplyr)
+library(stringr)
+
+Fall2019_Winter2020 <- read_csv("~/UCLA Baseball/Bauer Units/Winter2020.csv", skip = 3)
+table(Fall2019_Winter2020$Pitcher)
+
+winter <- Fall2019_Winter2020 %>% filter(Date == "1/10/2020"|Date == "1/14/2020"|Date == "1/17/2020"|Date == "1/18/2020"| Date == "1/21/2020"|Date == "1/24/2020"|Date == "1/25/2020"|Date == "1/28/2020"|Date == "1/31/2020") %>% filter(Pitcher == "Bergin, Jesse"| Pitcher == "Chaidez, Adrian"| Pitcher == "Colwell, Daniel"| Pitcher == "Filby, Jack"| Pitcher == "Hahn, Josh"| Pitcher == "Harrison, Charles"| Pitcher == "Karros, Jared"| Pitcher == "Mora, Kyle"| Pitcher == "Mullen, Sean"| Pitcher == "Nastrini, Nick"| Pitcher == "Pettway, Zach"| Pitcher == "Powell, Holden"| Pitcher == "Rubi, Felix"| Pitcher == "Saum, Jake"| Pitcher == "Scheidler, Nick"| Pitcher == "Townsend, Michael")
+```
+
+```{r, echo=FALSE, include=FALSE}
+Bauer_Units <- function(TrackMan, pitcher) {
+  TM <- TrackMan %>% select(RelSpeed, SpinRate, TaggedPitchType, Pitcher) %>% filter(Pitcher == pitcher)
+  Name.List <- str_split(pitcher, ", ")
+  Name <- str_glue(Name.List[[1]][2], Name.List[[1]][1], .sep = " ")
+  
+  FB <- TM %>% filter(TaggedPitchType == "Fastball")
+  FBVelo <- mean(FB$RelSpeed, na.rm = TRUE)
+  FBSpin <- mean(FB$SpinRate, na.rm = TRUE)
+  FBBauer <- FBSpin/FBVelo
+  
+  CH <- TM %>% filter(TaggedPitchType == "ChangeUp")
+  CHVelo <- mean(CH$RelSpeed, na.rm = TRUE)
+  CHSpin <- mean(CH$SpinRate, na.rm = TRUE)
+  CHBauer <- CHSpin/CHVelo
+
+  Bauers <- matrix(c(Name, round(FBBauer, 2), round(CHBauer, 2)), ncol = 3)
+  colnames(Bauers) <- c("Pitcher", "Fastballs", "Changeups")
+  Bauers
+}
+```
+
+
+```{r, echo=FALSE, warning=FALSE}
+players <- names(table(winter$Pitcher))
+x <- data.frame(1,2,3)
+colnames(x) <- c("Pitcher", "Fastballs", "Changeups")
+for (i in length(players):1) {
+  first <- Bauer_Units(winter, players[i])
+  x <- rbind(first,x)
+  
+}
+x[-nrow(x),]
+```
+

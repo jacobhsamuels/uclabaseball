@@ -1,0 +1,90 @@
+---
+title: "Bergin"
+author: "Jacob Samuels"
+date: "2/25/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE}
+library(readr)
+library(dplyr)
+Trackman <- read_csv("~/UCLA Baseball/CSVs/2021 Winter/Jan-Feb2021.csv")
+Jesse <- Trackman[,1:75] %>% filter(Pitcher == "Bergin, Jesse", !is.na(ExitSpeed))
+```
+
+```{r, include=FALSE}
+Hard <- Jesse %>% filter(ExitSpeed >= 90)
+                    
+Medium <- Jesse %>% filter(ExitSpeed >= 75 & ExitSpeed < 90)
+
+Soft <- Jesse %>% filter(ExitSpeed < 75)
+
+
+Hard$TaggedPitchType <- factor(Hard$TaggedPitchType, 
+                    level = c("Fastball", "Curveball", "Slider", "ChangeUp"))
+
+Medium$TaggedPitchType <- factor(Medium$TaggedPitchType, 
+                    level = c("Fastball", "Curveball", "Slider", "ChangeUp"))
+
+
+Soft$TaggedPitchType <- factor(Soft$TaggedPitchType, 
+                    level = c("Fastball", "Curveball", "Slider", "ChangeUp"))
+```
+
+
+```{r}
+library(ggplot2)
+ggplot(data = Hard, aes(PlateLocSide*-1, PlateLocHeight, color = TaggedPitchType)) + 
+  geom_point(shape = 19) + 
+  scale_color_manual(values = c("black", "orange", "cyan3", "red")) +
+  geom_vline(xintercept = -0.8333333) + 
+  geom_vline(xintercept = 0.8333333) +
+  geom_hline(yintercept = 3.5) + 
+  geom_hline(yintercept = 1.5) + 
+  ggtitle("Behind Home View of Bergin's Hard Hit Balls") + 
+  xlab("") +
+  ylab("") + 
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+```{r}
+ggplot(data = Medium, aes(PlateLocSide*-1, PlateLocHeight, color = TaggedPitchType)) + 
+  geom_point(shape = 15) + 
+  scale_color_manual(values = c("black", "orange", "cyan3", "red")) +
+  geom_vline(xintercept = -0.8333333) + 
+  geom_vline(xintercept = 0.8333333) +
+  geom_hline(yintercept = 3.5) + 
+  geom_hline(yintercept = 1.5) + 
+  ggtitle("Behind Home View of Bergin's Medium Hit Balls") + 
+  xlab("") +
+  ylab("") + 
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+```{r}
+ggplot(data = Soft, aes(PlateLocSide*-1, PlateLocHeight, color = TaggedPitchType)) + 
+  geom_point(shape = 17) + 
+  scale_color_manual(values = c("black", "orange", "cyan3", "red")) +
+  geom_vline(xintercept = -0.8333333) + 
+  geom_vline(xintercept = 0.8333333) +
+  geom_hline(yintercept = 3.5) + 
+  geom_hline(yintercept = 1.5) + 
+  ggtitle("Behind Home View of Bergin's Soft Hit Balls") + 
+  xlab("") +
+  ylab("") + 
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r}
+Jesse %>% group_by(TaggedPitchType) %>% count() %>% arrange(desc(n))
+Hard %>% group_by(TaggedPitchType) %>% count() %>% arrange(desc(n))
+Medium %>% group_by(TaggedPitchType) %>% count() %>% arrange(desc(n))
+Soft %>% group_by(TaggedPitchType) %>% count() %>% arrange(desc(n))
+```
+

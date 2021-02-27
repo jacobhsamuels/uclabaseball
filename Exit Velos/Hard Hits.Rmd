@@ -1,0 +1,58 @@
+---
+title: "Hard Hits"
+author: "Jacob Samuels"
+date: "11/17 Fall Game"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE, include=FALSE}
+library(readr)
+library(dplyr)
+library(gridExtra)
+library(grid)
+library(stringr)
+
+Trackman <- read_csv("~/UCLA Baseball/CSVs/2021 Season/2-26.csv")
+                                  ## CHANGE DATE/OPPONENT DOWN BELOW IN PDF TITLE
+TrackMan <- Trackman %>% filter(BatterTeam == "UCLA")
+Name_organizer <- function(Names, row) {
+  Name.List <- str_split(Names, ", ")
+  Name <- str_glue(Name.List[[row]][2], Name.List[[row]][1], .sep = " ")
+  Name
+}
+
+for (i in 1:nrow(TrackMan)) {
+  TrackMan$Batter[i] <- Name_organizer(TrackMan$Batter, i)
+}
+```
+
+```{r, echo=FALSE}
+Hard_Hits <- TrackMan %>% 
+  filter(ExitSpeed >= 90, PitchCall == "InPlay") %>%
+  mutate(ExitVelo = round(ExitSpeed, 1)) %>% 
+  arrange(desc(ExitSpeed)) %>% 
+  select(Batter, "Exit Velo" = ExitVelo, 
+         "Hit Type" = HitType, "Play Result" = PlayResult)
+Hard_Hits
+## pdf(file = "Hard Hits.pdf", height = 12, width = 10)
+## grid.table(Hard_Hits)
+```
+
+```{r, echo=FALSE}
+grob.hard <- tableGrob(Hard_Hits)
+
+grid.newpage()
+h <- grobHeight(grob.hard)
+w <- grobWidth(grob.hard)
+title <- textGrob("Hard Hits - 2-26 vs. UC Irvine", y=unit(0.7,"npc") + 0.5*h, 
+                  vjust=0,gp=gpar(fontsize=20))
+gt <- gTree(children=gList(grob.hard, title))
+
+pdf(file = "Hard Hits.pdf", height = 12, width = 10)
+grid.draw(gt)
+```
+

@@ -1,0 +1,105 @@
+---
+title: "Pitcher Splits"
+author: "Jacob Samuels"
+date: "12/5/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readr)
+library(dplyr)
+library(stringr)
+TrackMan <- read_csv("~/UCLA Baseball/CSVs/Winter 2021 CSVs/Jan-Feb2021.csv", skip = 3)
+
+AB <- TrackMan %>% filter(PlayResult == "Single" | PlayResult == "Double" | 
+                          PlayResult == "Triple" | PlayResult == "HomeRun" | 
+                          PlayResult == "Error" | PlayResult == "FieldersChoice" | 
+                          PlayResult == "Out" | KorBB == "Strikeout")
+
+Name_organizer <- function(Names, row) {
+  Name.List <- str_split(Names, ", ")
+  Name <- str_glue(Name.List[[row]][2], Name.List[[row]][1], .sep = " ")
+  Name
+}
+
+for (i in 1:nrow(AB)) {
+  AB$Pitcher[i] <- Name_organizer(AB$Pitcher, i)
+  AB$Batter[i] <- Name_organizer(AB$Batter, i)
+  if (AB$Batter[i] == "Patrick Caufield") AB$Batter[i] <- "Patrick Caulfield"
+}
+```
+
+
+#Pitchers
+
+```{r}
+LHB_AB <- AB %>% filter(BatterSide == "Left") %>% group_by(Pitcher) %>% 
+  count() %>% select(Pitcher, LH_ABs = n)
+RHB_AB <- AB %>% filter(BatterSide == "Right") %>% group_by(Pitcher) %>%
+  count() %>% select(Pitcher, RH_ABs = n)
+
+Hits <- AB %>% filter(PlayResult == "Single" | PlayResult == "Double" | 
+                      PlayResult == "Triple" | PlayResult == "HomeRun")
+
+LHB_H <- Hits %>% filter(BatterSide == "Left") %>% group_by(Pitcher) %>% 
+  count() %>% select(Pitcher, LH_Hits = n)
+RHB_H <- Hits %>% filter(BatterSide == "Right") %>% group_by(Pitcher) %>%
+  count() %>% select(Pitcher, RH_Hits = n)
+
+LHB <- merge(LHB_H, LHB_AB, all.y = TRUE)
+LHB[is.na(LHB)] <- 0
+RHB <- merge(RHB_H, RHB_AB, all.y = TRUE)
+RHB[is.na(RHB)] <- 0
+
+combined <- merge(LHB, RHB) %>% 
+  mutate(LH_BA = round(LH_Hits/LH_ABs, 3), RH_BA = round(RH_Hits/RH_ABs, 3),
+         All_Hits = LH_Hits + RH_Hits, All_ABs = LH_ABs + RH_ABs, 
+         All_BA = round(All_Hits/All_ABs, 3)) %>% 
+  select(Pitcher, LH_Hits, LH_ABs, LH_BA, RH_Hits, RH_ABs, RH_BA, All_Hits, All_ABs, All_BA)
+
+names(combined)[-1] <- c("Hits vs. LHBs", "ABs vs. LHBs", "BAA vs. LHBs", 
+                         "Hits vs. RHBs", "ABs vs. RHBs", "BAA vs. RHBs",
+                         "Total Hits", "Total ABs", "Total BAA")
+
+write_csv(combined, "~/UCLA Baseball/Pitchers/Splits/Winter 2021 Pitcher Splits.csv")
+```
+
+
+#Hitters
+
+```{r}
+LHP_AB <- AB %>% filter(PitcherThrows == "Left") %>% group_by(Batter) %>% 
+  count() %>% select(Batter, LH_ABs = n)
+RHP_AB <- AB %>% filter(PitcherThrows == "Right") %>% group_by(Batter) %>%
+  count() %>% select(Batter, RH_ABs = n)
+
+Hits <- AB %>% filter(PlayResult == "Single" | PlayResult == "Double" | 
+                      PlayResult == "Triple" | PlayResult == "HomeRun")
+
+LHP_H <- Hits %>% filter(PitcherThrows == "Left") %>% group_by(Batter) %>% 
+  count() %>% select(Batter, LH_Hits = n)
+RHP_H <- Hits %>% filter(PitcherThrows == "Right") %>% group_by(Batter) %>%
+  count() %>% select(Batter, RH_Hits = n)
+
+LHP <- merge(LHP_H, LHP_AB, all.y = TRUE)
+LHP[is.na(LHP)] <- 0
+RHP <- merge(RHP_H, RHP_AB, all.y = TRUE)
+RHP[is.na(RHP)] <- 0
+
+combined <- merge(LHP, RHP) %>% 
+  mutate(LH_BA = round(LH_Hits/LH_ABs, 3), RH_BA = round(RH_Hits/RH_ABs, 3),
+         All_Hits = LH_Hits + RH_Hits, All_ABs = LH_ABs + RH_ABs, 
+         All_BA = round(All_Hits/All_ABs, 3)) %>% 
+  select(Batter, LH_Hits, LH_ABs, LH_BA, RH_Hits, RH_ABs, RH_BA, All_Hits, All_ABs, All_BA)
+
+names(combined)[-1] <- c("Hits vs. LHPs", "ABs vs. LHPs", "AVG vs. LHPs", 
+                         "Hits vs. RHPs", "ABs vs. RHPs", "AVG vs. RHPs",
+                         "Total Hits", "Total ABs", "Total AVG")
+
+write_csv(combined, "~/UCLA Baseball/Pitchers/Splits/Winter 2021 Batter Splits.csv")
+```
+

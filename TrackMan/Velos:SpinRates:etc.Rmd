@@ -1,0 +1,72 @@
+---
+title: "Velos/Spin Rates/etc."
+author: "Jacob Samuels"
+date: "10/31/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+source("Velos:Spin Rates:etc.R")
+```
+
+```{r}
+Bullpens <- read_csv("~/UCLA Baseball/Fall 2020 CSVs/10:30:20 Bullpens.csv")
+table(Bullpens$TaggedPitchType)
+
+```
+
+```{r}
+players <- names(table(Bullpens$Pitcher))
+
+pdf("~/UCLA Baseball/TrackMan/Bullpens.pdf")
+for (i in seq_along(players)) {
+  Axis_Tilt(Bullpens, players[i])
+}
+dev.off()
+```
+
+```{r}
+library(readr)
+library(dplyr)
+
+TrackMan <- read_csv("~/UCLA Baseball/CSVs/2021 Season/2-26.csv")
+
+Karros <- TrackMan %>% filter(Pitcher == "Karros, Jared")
+
+Karros <- Karros %>% 
+    mutate(PitchOrder = ifelse(TaggedPitchType == "Fastball",1, 
+                               ifelse(TaggedPitchType == "Slider",3,
+                                      ifelse(TaggedPitchType == "ChangeUp",4,2))), 
+           PitchColor = ifelse(TaggedPitchType == "Fastball","black", 
+                               ifelse(TaggedPitchType == "Slider","cornflowerblue",
+                                      ifelse(TaggedPitchType == "ChangeUp","chartreuse",
+                                             ifelse(TaggedPitchType == "Curveball", "orange", "purple"))))) 
+  
+Karros %>% group_by(TaggedPitchType) %>% 
+    summarise(Min.Velo = round(min(RelSpeed, na.rm = T)),
+              Max.Velo = round(max(RelSpeed, na.rm = T)),
+              Avg.Velocity = round(mean(RelSpeed, na.rm = T)), 
+              SpinRate = round(mean(SpinRate, na.rm = T)), 
+              Extension = format(round(mean(Extension, na.rm = T),1), nsmall = 1),
+              Vert = round(mean(VertBreak, na.rm = T),1),
+              Horiz = round(mean(HorzBreak, na.rm = T),1),
+              Height = round(mean(RelHeight, na.rm = T),1),
+              Pitch = mean(PitchOrder), PitchColor = unique(PitchColor)) %>% 
+    arrange(Pitch) %>% View()
+```
+
+```{r}
+TrackMan <- read_csv("~/UCLA Baseball/Fall 2020 CSVs/11-20.csv")
+
+TrackMan %>% filter(TaggedPitchType == "Fastball") %>%
+  group_by(Pitcher) %>% 
+  summarise(FB_Break = round(mean(RelSpeed, na.rm = TRUE), 1)) %>% 
+  arrange(desc(FB_Break)) %>% View()
+
+
+```
+

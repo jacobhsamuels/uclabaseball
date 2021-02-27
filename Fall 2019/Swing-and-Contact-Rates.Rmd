@@ -1,0 +1,213 @@
+---
+title: "Fall 2019 Report"
+author: "Jacob Samuels"
+date: "1/2/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE, include=FALSE}
+library(readr)
+library(dplyr)
+Fall <- read_csv("~/UCLA Baseball/Fall 2019/Fall 2019 All Games (Complete Dataset-Adj. for BIP).csv")
+
+source("Swing and Contact Rates.R")
+```
+
+# Adrian Chaidez:
+
+## Swing Rates:
+```{r, echo=FALSE}
+swing_rate("Chaidez, Adrian", Fall)
+```
+
+## Contact Rates:
+```{r, echo=FALSE}
+contact_rate("Chaidez, Adrian", Fall)
+```
+
+# Daniel Colwell:
+
+## Swing Rates:
+```{r, echo=FALSE}
+swing_rate("Colwell, Daniel", Fall)
+```
+
+## Contact Rates:
+```{r, echo=FALSE}
+contact_rate("Colwell, Daniel", Fall)
+```
+
+\pagebreak
+
+# Jack Filby:
+
+## Swing Rates:
+```{r, echo=FALSE}
+swing_rate("Filby, Jack", Fall)
+```
+
+## Contact Rates:
+```{r, echo=FALSE}
+contact_rate("Filby, Jack", Fall)
+```
+
+# Josh Hahn:
+
+## Swing Rates:
+```{r, echo=FALSE}
+swing_rate("Hahn, Josh", Fall)
+```
+
+## Contact Rates:
+```{r, echo=FALSE}
+contact_rate("Hahn, Josh", Fall)
+```
+
+\pagebreak
+
+# Charles Harrison:
+
+## Swing Rates:
+```{r, echo=FALSE}
+swing_rate("Harrison, Charles", Fall)
+```
+
+## Contact Rates:
+```{r, echo=FALSE}
+contact_rate("Harrison, Charles", Fall)
+```
+
+# Jared Karros:
+
+## Swing Rates:
+```{r, echo=FALSE}
+swing_rate("Karros, Jared", Fall)
+```
+
+## Contact Rates:
+```{r, echo=FALSE}
+contact_rate("Karros, Jared", Fall)
+```
+
+\pagebreak
+
+# Kyle Mora:
+
+## Swing Rates:
+```{r, echo=FALSE}
+swing_rate("Mora, Kyle", Fall)
+```
+
+## Contact Rates:
+```{r, echo=FALSE}
+contact_rate("Mora, Kyle", Fall)
+```
+
+# Sean Mullen:
+
+## Swing Rates:
+```{r, echo=FALSE}
+swing_rate("Mullen, Sean", Fall)
+```
+
+## Contact Rates:
+```{r, echo=FALSE}
+contact_rate("Mullen, Sean", Fall)
+```
+
+\pagebreak
+
+# Nick Nastrini:
+
+## Swing Rates:
+```{r, echo=FALSE}
+swing_rate("Nastrini, Nick", Fall)
+```
+
+## Contact Rates:
+```{r, echo=FALSE}
+contact_rate("Nastrini, Nick", Fall)
+```
+
+# Zach Pettway:
+
+## Swing Rates:
+```{r, echo=FALSE}
+swing_rate("Pettway, Zack", Fall)
+```
+
+## Contact Rates:
+```{r, echo=FALSE}
+contact_rate("Pettway, Zack", Fall)
+```
+
+\pagebreak
+
+# Holden Powell:
+
+## Swing Rates:
+```{r, echo=FALSE}
+swing_rate("Powell, Holden", Fall)
+```
+
+## Contact Rates:
+```{r, echo=FALSE}
+contact_rate("Powell, Holden", Fall)
+```
+
+# Felix Rubi:
+
+## Swing Rates:
+```{r, echo=FALSE}
+swing_rate("Rubi, Felix", Fall)
+```
+
+## Contact Rates:
+```{r, echo=FALSE}
+contact_rate("Rubi, Felix", Fall)
+```
+
+\pagebreak
+
+# Jake Saum:
+
+## Swing Rates:
+```{r, echo=FALSE}
+swing_rate("Saum, Jake", Fall)
+```
+
+## Contact Rates:
+```{r, echo=FALSE}
+contact_rate("Saum, Jake", Fall)
+```
+
+# Nick Scheidler:
+
+## Swing Rates:
+```{r, echo=FALSE}
+swing_rate("Scheidler, Nick", Fall)
+```
+
+## Contact Rates:
+```{r, echo=FALSE}
+contact_rate("Scheidler, Nick", Fall)
+```
+
+\pagebreak
+
+# Michael Townsend:
+
+## Swing Rates:
+```{r, echo=FALSE}
+swing_rate("Townsend, Michael", Fall)
+```
+
+## Contact Rates:
+```{r, echo=FALSE}
+contact_rate("Townsend, Michael", Fall)
+```
+

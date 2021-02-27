@@ -1,0 +1,31 @@
+---
+title: "Inside Edge"
+author: "Jacob Samuels"
+date: "2/14/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+\pagebreak
+
+```{r, echo=FALSE, include=FALSE}
+source("Inside Edge.R")
+```
+
+```{r, echo=FALSE, include=FALSE}
+Game <- read_csv("~/UCLA Baseball/CSVs/2021 Season/2-26.csv")
+table(Game$Pitcher)
+table(Game$TaggedPitchType)
+table(Game$PitchCall)
+```
+
+```{r, echo=FALSE, results='asis'}
+players <- names(table(Game$Pitcher))
+for (i in seq_along(players)) {
+  Inside_Edge(Game, players[i])
+}
+```
+
